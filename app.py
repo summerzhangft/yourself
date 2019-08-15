@@ -2,6 +2,7 @@ from wsgiref.simple_server import make_server
 from webob.dec import wsgify
 import  webob
 from webob import Request, Response
+from webob import exc
 
 def hello(request: Request) -> Response:
     name = request.params.get("name", 'anonymous')
@@ -19,11 +20,13 @@ class Application:
     @classmethod
     def register(cls,path, handler):
         cls.ROUTER[path] = handler
-    def default_handler(self,request: Request) -> Response:
-        return Response(body = 'not found',status = 404)
+
     @wsgify
     def __call__(self, request: Request) -> Response:
-        return self.ROUTER.get(request.path, self.default_handler)(request)
+        try:
+            return self.ROUTER[request.path](request)
+        except KeyError:
+            return exc.HTTPNotFound("not found")
 
 if __name__ == '__main__':
     Application.register('/hello',hello)
